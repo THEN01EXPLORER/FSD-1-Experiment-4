@@ -7,10 +7,22 @@ app.use(express.json());
 app.use(express.static('public'));
 
 // Initialize Upstash Redis Client (Serverless HTTP)
-// We still look for process.env.REDIS_URL to make it a drop-in 
-const client = process.env.REDIS_URL ?
-    new Redis({ url: process.env.REDIS_URL, token: 'REPLACE_TOKEN_IF_NEEDED' }) :
-    new Redis({ url: 'http://localhost:8079', token: 'mock-token' });
+let upstashUrl = 'http://localhost:8079';
+let upstashToken = 'mock-token';
+
+if (process.env.REDIS_URL) {
+    // Upstash provides a redis:// URL, but the HTTP client needs https://
+    // It looks like: redis://default:TOKEN@endpoint.upstash.io:6379
+    try {
+        const parsedUrl = new URL(process.env.REDIS_URL);
+        upstashToken = parsedUrl.password;
+        upstashUrl = `https://${parsedUrl.hostname}`;
+    } catch (e) {
+        console.error("Failed to parse REDIS_URL, falling back to local mock");
+    }
+}
+
+const client = new Redis({ url: upstashUrl, token: upstashToken });
 
 (async () => {
     // Upstash Redis HTTP client doesn't need explicit .connect()
