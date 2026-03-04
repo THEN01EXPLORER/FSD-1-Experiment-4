@@ -1,29 +1,26 @@
 const express = require('express');
-const { createClient } = require('redis');
+const { Redis } = require('@upstash/redis');
 const app = express();
 const port = 3001;
 
 app.use(express.json());
 app.use(express.static('public'));
 
-// Initialize Redis Client
-const client = createClient({
-    url: process.env.REDIS_URL || 'redis://localhost:6379'
-});
-
-client.on('error', (err) => console.log('Redis Client Error', err));
+// Initialize Upstash Redis Client (Serverless HTTP)
+// We still look for process.env.REDIS_URL to make it a drop-in 
+const client = process.env.REDIS_URL ?
+    new Redis({ url: process.env.REDIS_URL, token: 'REPLACE_TOKEN_IF_NEEDED' }) :
+    new Redis({ url: 'http://localhost:8079', token: 'mock-token' });
 
 (async () => {
-    await client.connect();
-    console.log('Connected to Redis');
+    // Upstash Redis HTTP client doesn't need explicit .connect()
+    console.log('Connected to Redis (Serverless)');
 
-    // Reset seats for demo purposes safely
-    // await client.flushDb(); 
     // Initialize 10 seats if not present
     for (let i = 1; i <= 10; i++) {
         const seatKey = `seat:${i}`;
-        const exists = await client.exists(seatKey);
-        if (!exists) {
+        const status = await client.get(seatKey);
+        if (status === null) {
             await client.set(seatKey, 'available');
         }
     }
@@ -64,23 +61,23 @@ app.post('/book/:seatId', async (req, res) => {
     const seatId = req.params.seatId;
     const seatKey = `seat:${seatId}`;
 
-    // Redis Transaction (Optimistic Locking)
     try {
-        await client.watch(seatKey);
         const status = await client.get(seatKey);
 
         if (status === 'available') {
-            const multi = client.multi();
-            multi.set(seatKey, 'booked');
-            const results = await multi.exec();
+            // @upstash/redis doesn't strictly support stateful WATCH/MULTI like TCP clients
+            // But we can simulate atomic updates via simple set if it hasn't changed
+            // For a robust serverless setup, we usually use Lua scripts or simple SETNX
+            const results = await client.set(seatKey, 'booked', { get: true });
 
-            if (results) {
+            // If the previous value returned by GET was 'available', our SET worked.
+            if (results === 'available') {
                 res.status(200).send(`Seat ${seatId} booked successfully.`);
             } else {
+                // Someone else got it a millisecond before us
                 res.status(409).send(`Seat ${seatId} booking failed (concurrency conflict).`);
             }
         } else {
-            await client.unwatch(); // Important to release the watch
             res.status(400).send(`Seat ${seatId} is already booked or invalid.`);
         }
     } catch (err) {
