@@ -7,12 +7,11 @@ app.use(express.json());
 app.use(express.static('public'));
 
 // Initialize Upstash Redis Client (Serverless HTTP)
-let upstashUrl = 'http://localhost:8079';
-let upstashToken = 'mock-token';
+let upstashUrl = process.env.UPSTASH_REDIS_REST_URL || 'http://localhost:8079';
+let upstashToken = process.env.UPSTASH_REDIS_REST_TOKEN || 'mock-token';
 
-if (process.env.REDIS_URL) {
-    // Upstash provides a redis:// URL, but the HTTP client needs https://
-    // It looks like: redis://default:TOKEN@endpoint.upstash.io:6379
+// Fallback logic if the user only provided the old REDIS_URL string
+if (!process.env.UPSTASH_REDIS_REST_URL && process.env.REDIS_URL) {
     try {
         const parsedUrl = new URL(process.env.REDIS_URL);
         upstashToken = parsedUrl.password;
