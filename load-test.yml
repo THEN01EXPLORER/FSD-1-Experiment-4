@@ -1,0 +1,16 @@
+config:
+  target: "http://localhost:3001"
+  phases:
+    - duration: 10
+      arrivalRate: 5
+      name: "Warm up"
+    - duration: 10
+      arrivalRate: 20
+      name: "High load"
+
+scenarios:
+  - flow:
+      - loop:
+        - post:
+            url: "/book/{{ $randomNumber(1, 10) }}"
+        count: 5

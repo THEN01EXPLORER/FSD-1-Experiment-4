@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cinema Seat Booking | Concurrent System</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Cinema Seat Booking</h1>
+            <p>Experimental Concurrent Ticket System with Redis Locking</p>
+        </header>
+
+        <div class="legend">
+            <div class="item">
+                <div class="box available"></div>
+                <span>Available</span>
+            </div>
+            <div class="item">
+                <div class="box booked"></div>
+                <span>Booked</span>
+            </div>
+            <div class="item">
+                <div class="box selected"></div>
+                <span>Your Selection</span>
+            </div>
+        </div>
+
+        <div class="screen">SCREEN</div>
+
+        <div id="seat-grid" class="seat-grid">
+            <!-- Seats will be injected here -->
+        </div>
+
+        <div class="controls">
+            <button id="book-btn" class="btn primary" disabled>Book Selected Seat</button>
+            <button id="reset-btn" class="btn secondary">Reset Database</button>
+        </div>
+
+        <div id="status-msg" class="status-msg"></div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
