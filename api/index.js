@@ -98,8 +98,12 @@ app.post('/book/:seatId', async (req, res) => {
     }
 });
 
-app.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`);
-});
+// Vercel Serverless environment execution
+// We do NOT use app.listen() in Vercel because Vercel controls the execution port.
+if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+    app.listen(port, () => {
+        console.log(`Server running at http://localhost:${port}`);
+    });
+}
 
 module.exports = app;
